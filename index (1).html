@@ -251,10 +251,10 @@ function scheduleAuto(){
   S.timer=setTimeout(()=>run("auto"),(+store.get("cpc_idle")||4)*1000);
 }
 function capture(){
-  const W=1400,H=Math.round(W*pdfC.height/pdfC.width),mk=()=>{const c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,W,H);return[c,x]};
+  const W=prov()==="anthropic"?1400:1000,H=Math.round(W*pdfC.height/pdfC.width),mk=()=>{const c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,W,H);return[c,x]};
   const[a,ax]=mk();ax.drawImage(pdfC,0,0,W,H);paint(ax,cur().map(s=>({...s,w:s.w*1.3})),W);
   const[b,bx]=mk();paint(bx,cur().map(s=>({...s,w:s.w*1.3})),W,"#000");
-  return[a,b].map(c=>c.toDataURL("image/jpeg",.85).split(",")[1]);
+  return[a,b].map(c=>c.toDataURL("image/jpeg",prov()==="anthropic"?.85:.7).split(",")[1]);
 }
 async function run(mode){
   if(!S.pages)return;
@@ -281,7 +281,7 @@ async function run(mode){
       /* OpenAI-style chat API; one image only, since many free vision models accept just one */
       const url=P==="nvidia"?store.get("cpc_proxy"):"https://openrouter.ai/api/v1/chat/completions";
       r=await fetch(url,{method:"POST",headers:{"content-type":"application/json","Authorization":"Bearer "+key},
-        body:JSON.stringify({model:model,max_tokens:3000,temperature:.2,messages:[{role:"system",content:SYSTEM+" The single image is the paper page with the student's handwriting drawn over it."},
+        body:JSON.stringify({model:model,max_tokens:1500,temperature:.2,messages:[{role:"system",content:SYSTEM+" Reply immediately with the JSON only and keep any reasoning very short. The single image is the paper page with the student's handwriting drawn over it."},
           {role:"user",content:[{type:"text",text:note},{type:"image_url",image_url:{url:"data:image/jpeg;base64,"+img}}]}]})});
       j=await r.json();if(!r.ok)throw new Error((j.error&&(j.error.message||j.error))||j.detail||j.message||("HTTP "+r.status));
       txt=j.choices[0].message.content;
