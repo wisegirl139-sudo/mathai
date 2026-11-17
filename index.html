@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Core Pure Coach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<style>
+:root{--desk:#e9e6df;--bar:#fbfaf7;--ink:#1c2230;--mute:#6b7080;--line:#d8d4c9;--accent:#2b4acb;--good:#1f8a4c;--warn:#b7791f;--bad:#c53030;--card:#fff}
+@media (prefers-color-scheme:dark){:root{--desk:#1b1f27;--bar:#232833;--ink:#e8eaf0;--mute:#9aa0b0;--line:#363c4a;--accent:#7f9bff;--good:#4cc98a;--warn:#e3b04b;--bad:#ff7b7b;--card:#2a303c}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font:15px/1.45 "IBM Plex Sans",system-ui,sans-serif;background:var(--desk);color:var(--ink);display:flex;flex-direction:column}
+header{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;background:var(--bar);border-bottom:1px solid var(--line)}
+header h1{font-size:16px;margin:0 8px 0 2px;font-weight:600}
+.sep{width:1px;height:24px;background:var(--line);margin:0 4px}
+button,select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+button.primary{background:var(--ink);color:var(--bar);border-color:var(--ink)}
+button:disabled{opacity:.45;cursor:default}
+.sw{width:24px;height:24px;border-radius:50%;padding:0;border:2px solid var(--line)}
+.sw.on{border-color:var(--ink);outline:2px solid var(--bar);outline-offset:-4px}
+main{flex:1;display:flex;min-height:0}
+#stage{flex:1;overflow:auto;padding:16px;display:flex;justify-content:center;align-items:flex-start}
+#sheet{position:relative;background:#fff;box-shadow:0 2px 18px rgba(0,0,0,.22);display:none}
+#sheet canvas{display:block}
+#ink{position:absolute;inset:0}
+#empty{margin:auto;text-align:center;color:var(--mute);max-width:380px}
+#empty b{display:block;color:var(--ink);font-size:20px;margin-bottom:6px}
+aside{width:360px;max-width:42vw;border-left:1px solid var(--line);background:var(--bar);display:flex;flex-direction:column;min-height:0}
+aside h2{font-size:14px;margin:0;padding:10px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+#status{font-weight:400;color:var(--mute);font-size:13px}
+#log{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:10px}
+.fb{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--mute);border-radius:8px;padding:9px 11px}
+.fb .t{display:flex;gap:8px;align-items:center;font-weight:600}
+.fb .badge{min-width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:12px;background:var(--mute)}
+.fb p{margin:6px 0 0}
+.fb .fix{margin-top:8px;padding:7px 9px;border-radius:6px;background:var(--desk);font-size:14px}
+.fb small{color:var(--mute)}
+.v-great{border-left-color:var(--good)}.v-great .badge,.v-good .badge{background:var(--good)}
+.v-good{border-left-color:var(--good)}
+.v-improve{border-left-color:var(--accent)}.v-improve .badge{background:var(--accent)}
+.v-mistake,.v-blunder{border-left-color:var(--bad)}.v-mistake .badge,.v-blunder .badge{background:var(--bad)}
+.v-unclear{border-left-color:var(--warn)}.v-unclear .badge{background:var(--warn)}
+.ask{display:flex;gap:6px;padding:10px;border-top:1px solid var(--line);flex-wrap:wrap}
+.ask button{flex:1}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--bar);color:var(--ink);max-width:480px;width:92vw}
+dialog label{display:block;margin:10px 0 3px;font-weight:500}
+dialog input{width:100%;font:inherit;padding:7px 9px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+dialog p{color:var(--mute);font-size:13px;margin:8px 0}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:s .8s linear infinite;vertical-align:-2px;margin-right:5px}
+@keyframes s{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+@media (max-width:820px){main{flex-direction:column}aside{width:100%;max-width:none;height:42%;border-left:0;border-top:1px solid var(--line)}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Core Pure Coach</h1>
+  <button id="open" class="primary">Open paper</button>
+  <input id="file" type="file" accept="application/pdf,image/*" hidden>
+  <span class="sep"></span>
+  <button id="write" title="Turn writing on or off (W)">Write</button>
+  <button id="pen" class="on">Pen</button>
+  <button id="erase">Eraser</button>
+  <button class="sw on" data-c="#1d3fd1" style="background:#1d3fd1" aria-label="Blue"></button>
+  <button class="sw" data-c="#c53030" style="background:#c53030" aria-label="Red"></button>
+  <button class="sw" data-c="#111111" style="background:#111" aria-label="Black"></button>
+  <button id="undo">Undo</button>
+  <button id="clear">Clear page</button>
+  <span class="sep"></span>
+  <button id="prev" aria-label="Previous page">&lsaquo;</button>
+  <span id="pg">–</span>
+  <button id="next" aria-label="Next page">&rsaquo;</button>
+  <button id="zout" aria-label="Zoom out">−</button>
+  <button id="zin" aria-label="Zoom in">+</button>
+  <span class="sep"></span>
+  <button id="settings">Settings</button>
+</header>
+<main>
+  <div id="stage">
+    <div id="empty"><b>Open a past paper</b>Upload a PDF or a photo of a question, press Write, and work as you would on paper. The coach reads your working and replies in the panel.</div>
+    <div id="sheet"><canvas id="pdf"></canvas><canvas id="ink"></canvas></div>
+  </div>
+  <aside>
+    <h2>Coach <span id="status">Idle</span></h2>
+    <div id="log"></div>
+    <div class="ask">
+      <button id="auto" class="on" title="Check automatically when you stop writing">Auto-check: on</button>
+      <select id="level" aria-label="Feedback level">
+        <option value="hint">Hints only</option>
+        <option value="explain">Full explanations</option>
+      </select>
+      <button id="check" class="primary">Check now</button>
+      <button id="hint">Stuck? Hint</button>
+      <button id="show">Show next step</button>
+    </div>
+  </aside>
+</main>
+
+<dialog id="dlg">
+  <form method="dialog">
+    <h3 style="margin:0 0 4px">Settings</h3>
+    <p>Your Anthropic API key is stored only in this browser (localStorage) and sent straight to api.anthropic.com. Use a key with a low spend limit and never share the page with the key saved.</p>
+    <label for="prov">AI provider</label>
+    <select id="prov" style="width:100%"><option value="anthropic">Anthropic Claude (paid, best)</option><option value="nvidia">NVIDIA NIM (free key, needs proxy)</option><option value="openrouter">OpenRouter (free models available)</option></select>
+    <label for="key" id="keylab">API key</label>
+    <input id="key" type="password" autocomplete="off">
+    <label for="model">Model</label>
+    <input id="model">
+    <div id="proxybox" hidden><label for="proxy">Proxy URL (your Cloudflare Worker)</label>
+    <input id="proxy" placeholder="https://nvidia-proxy.yourname.workers.dev"></div>
+    <label for="idle">Auto-check delay after you stop writing (seconds)</label>
+    <input id="idle" type="number" min="1" max="30" value="4">
+    <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">
+      <button value="cancel">Cancel</button><button id="save" value="ok" class="primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+const S={pages:0,cur:0,pdf:null,img:null,zoom:1,strokes:{},hist:{},colour:"#1d3fd1",erase:false,writing:false,busy:false,pending:false,dirty:{},timer:null,log:[],penSeen:false};
+const pdfC=$("pdf"),ink=$("ink"),ictx=ink.getContext("2d"),sheet=$("sheet");
+const mem={};const store={failed:false,get:k=>{try{const v=localStorage.getItem(k);if(v!==null)return v}catch(e){}return mem[k]||""},set:(k,v)=>{mem[k]=v;try{localStorage.setItem(k,v)}catch(e){store.failed=true}}};
+
+/* ---------- loading & rendering ---------- */
+$("open").onclick=()=>$("file").click();
+$("file").onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  S.strokes={};S.hist={};S.dirty={};S.cur=0;S.pdf=null;S.img=null;
+  try{
+    if(f.type==="application/pdf"){
+      S.pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;S.pages=S.pdf.numPages;
+    }else{
+      S.img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=URL.createObjectURL(f)});S.pages=1;
+    }
+  }catch(err){setStatus("Couldn’t open that file. Try a PDF, PNG or JPG.");return}
+  $("empty").style.display="none";sheet.style.display="block";
+  S.log=[];$("log").innerHTML="";render();
+};
+async function render(){
+  const stageW=Math.min($("stage").clientWidth-32,1000)*S.zoom,dpr=Math.max(1,window.devicePixelRatio||1);
+  let W,H;
+  if(S.pdf){
+    const p=await S.pdf.getPage(S.cur+1),v1=p.getViewport({scale:1}),sc=stageW/v1.width,vp=p.getViewport({scale:sc*dpr});
+    pdfC.width=vp.width;pdfC.height=vp.height;W=vp.width/dpr;H=vp.height/dpr;
+    await p.render({canvasContext:pdfC.getContext("2d"),viewport:vp}).promise;
+  }else{
+    W=stageW;H=W*S.img.height/S.img.width;pdfC.width=W*dpr;pdfC.height=H*dpr;
+    pdfC.getContext("2d").drawImage(S.img,0,0,pdfC.width,pdfC.height);
+  }
+  for(const c of [pdfC,ink]){c.style.width=W+"px";c.style.height=H+"px"}
+  ink.width=W*dpr;ink.height=H*dpr;ink._dpr=dpr;
+  $("pg").textContent=(S.cur+1)+" / "+S.pages;
+  redraw();applyMode();
+}
+function paint(ctx,strokes,W,colour){
+  ctx.lineCap="round";ctx.lineJoin="round";
+  for(const s of strokes){
+    ctx.strokeStyle=colour||s.c;ctx.lineWidth=Math.max(1,s.w*W);ctx.beginPath();
+    s.p.forEach((q,i)=>{const x=q[0]*W,y=q[1]*W;i?ctx.lineTo(x,y):ctx.moveTo(x,y)});
+    if(s.p.length===1)ctx.lineTo(s.p[0][0]*W+.1,s.p[0][1]*W);
+    ctx.stroke();
+  }
+}
+const cur=()=>S.strokes[S.cur]||(S.strokes[S.cur]=[]);
+function redraw(){ictx.clearRect(0,0,ink.width,ink.height);paint(ictx,cur(),ink.width)}
+
+/* ---------- drawing (coords normalised to page width) ---------- */
+let stroke=null;
+const pt=e=>{const r=ink.getBoundingClientRect();return[(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.width]};
+function snap(){(S.hist[S.cur]||(S.hist[S.cur]=[])).push(JSON.stringify(cur()))}
+ink.addEventListener("pointerdown",e=>{
+  if(!S.writing)return;
+  if(e.pointerType==="pen")S.penSeen=true;
+  if(e.pointerType==="touch"&&S.penSeen)return;
+  e.preventDefault();ink.setPointerCapture(e.pointerId);clearTimeout(S.timer);
+  snap();
+  if(S.erase){stroke={erase:true};eraseAt(pt(e));return}
+  const w=(e.pointerType==="pen"?2.2:2.6)/ink.getBoundingClientRect().width;
+  stroke={c:S.colour,w:w,p:[pt(e)]};cur().push(stroke);redraw();
+});
+ink.addEventListener("pointermove",e=>{
+  if(!stroke)return;e.preventDefault();
+  const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];
+  for(const ev of evs){stroke.erase?eraseAt(pt(ev)):stroke.p.push(pt(ev))}
+  redraw();
+});
+const end=()=>{if(!stroke)return;stroke=null;S.dirty[S.cur]=true;scheduleAuto()};
+ink.addEventListener("pointerup",end);ink.addEventListener("pointercancel",end);
+function eraseAt(q){
+  const r=0.012,a=cur();
+  S.strokes[S.cur]=a.filter(s=>!s.p.some(p=>Math.hypot(p[0]-q[0],p[1]-q[1])<r));
+}
+function applyMode(){ink.style.pointerEvents=S.writing?"auto":"none";ink.style.touchAction=S.writing?"none":"auto";ink.style.cursor=S.writing?(S.erase?"cell":"crosshair"):"default";$("write").classList.toggle("on",S.writing);$("write").textContent=S.writing?"Writing: on":"Write"}
+$("write").onclick=()=>{S.writing=!S.writing;applyMode()};
+$("pen").onclick=()=>{S.erase=false;$("pen").classList.add("on");$("erase").classList.remove("on");if(!S.writing){S.writing=true}applyMode()};
+$("erase").onclick=()=>{S.erase=true;$("erase").classList.add("on");$("pen").classList.remove("on");S.writing=true;applyMode()};
+document.querySelectorAll(".sw").forEach(b=>b.onclick=()=>{S.colour=b.dataset.c;document.querySelectorAll(".sw").forEach(x=>x.classList.toggle("on",x===b));$("pen").click()});
+$("undo").onclick=()=>{const h=S.hist[S.cur];if(h&&h.length){S.strokes[S.cur]=JSON.parse(h.pop());redraw()}};
+$("clear").onclick=()=>{if(cur().length&&confirm("Clear all writing on this page?")){snap();S.strokes[S.cur]=[];redraw()}};
+$("prev").onclick=()=>go(-1);$("next").onclick=()=>go(1);
+function go(d){const n=S.cur+d;if(n<0||n>=S.pages)return;S.cur=n;render()}
+$("zin").onclick=()=>{S.zoom=Math.min(2.5,S.zoom+.15);if(S.pages)render()};
+$("zout").onclick=()=>{S.zoom=Math.max(.5,S.zoom-.15);if(S.pages)render()};
+addEventListener("keydown",e=>{if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT")return;
+  if(e.key==="w")$("write").click();if((e.ctrlKey||e.metaKey)&&e.key==="z"){e.preventDefault();$("undo").click()}});
+let rt;addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(()=>S.pages&&render(),250)});
+
+/* ---------- settings ---------- */
+const DEF={anthropic:"claude-sonnet-5-5",nvidia:"mistralai/mistral-large-4-1t-a52b",openrouter:"google/gemma-3-27b-it:free"};
+const HINT={anthropic:"sk-ant-...",nvidia:"nvapi-...",openrouter:"sk-or-..."};
+const prov=()=>store.get("cpc_prov")||"anthropic";
+function fields(){const p=$("prov").value;$("key").value=store.get("cpc_key_"+p);$("key").placeholder=HINT[p];$("model").value=store.get("cpc_model_"+p)||DEF[p];$("proxybox").hidden=p!=="nvidia";$("proxy").value=store.get("cpc_proxy")}
+$("prov").onchange=fields;
+$("settings").onclick=()=>{$("prov").value=prov();fields();$("idle").value=store.get("cpc_idle")||4;$("dlg").showModal()};
+$("save").onclick=e=>{e.preventDefault();const p=$("prov").value;
+  if(!$("key").value.trim()){alert("Paste your API key first.");return}
+  if(p==="nvidia"&&!$("proxy").value.trim()){alert("NVIDIA needs your proxy URL.");return}
+  store.set("cpc_prov",p);store.set("cpc_key_"+p,$("key").value.trim());store.set("cpc_model_"+p,$("model").value.trim()||DEF[p]);store.set("cpc_proxy",$("proxy").value.trim());store.set("cpc_idle",$("idle").value);
+  $("dlg").close();setStatus(store.failed?"Saved for this tab only (browser blocked storage)":"Saved: "+$("prov").selectedOptions[0].text.split(" (")[0]+" · "+($("model").value.trim()||DEF[p]))};
+$("auto").onclick=()=>{const on=$("auto").classList.toggle("on");$("auto").textContent="Auto-check: "+(on?"on":"off")};
+
+/* ---------- coach ---------- */
+const SYSTEM=`You are a friendly, rigorous maths coach, like the coach on chess.com but for A Level Further Maths (Edexcel Core Pure: complex numbers, series, roots of polynomials, volumes of revolution, matrices, vectors, proof by induction, polar coordinates, hyperbolic functions, differential equations, Maclaurin series, etc).
+The student is working on a past paper by hand. You get two images: (1) the paper page with their handwriting drawn over it, (2) only their handwriting on white. Handwriting may be messy; read carefully and say so if you cannot read something.
+Identify the question part they are working on and judge their MOST RECENT working (not what they have not started). Check every line of algebra and calculus, signs, notation, method choice, and whether the answer matches what the question asks (exact form, degrees of accuracy, show-that steps, conclusion lines for induction). Think of mark-scheme style (M1, A1, B1, dM1, cso) when useful.
+Verdicts: "great" (excellent or neat/elegant step), "good" (correct), "improve" (correct but a clearer, faster or more standard method exists), "mistake" (an error that affects the result), "blunder" (a serious conceptual error), "unclear" (you cannot read or follow it), "nothing" (no new working to comment on).
+Rules: Do not repeat feedback you already gave. Be concise (max 3 sentences). Point to the exact line or symbol. Use LaTeX in $...$ for maths. Never be harsh.
+Respond with ONLY a JSON object, no markdown fences: {"verdict":"...","title":"3-6 words","feedback":"...","fix":"optional: corrected step or better method, in LaTeX","marks":"optional e.g. M1 A0"}`;
+const LABEL={great:["!!","Excellent"],good:["✓","Correct"],improve:["★","Better way"],mistake:["?","Mistake"],blunder:["??","Blunder"],unclear:["…","Can’t read that"]};
+const MODE={
+  auto:"Check my latest working.",
+  hint:"I am stuck. Give a hint for the next step without giving the answer or the full method. Use verdict good or unclear. Put the hint in feedback and leave fix empty.",
+  show:"Show me the next step I should write, with a short reason. Put it in fix."
+};
+function setStatus(t,spin){$("status").innerHTML=(spin?'<span class="spin"></span>':"")+t}
+function scheduleAuto(){
+  clearTimeout(S.timer);
+  if(!$("auto").classList.contains("on"))return;
+  S.timer=setTimeout(()=>run("auto"),(+store.get("cpc_idle")||4)*1000);
+}
+function capture(){
+  const W=1400,H=Math.round(W*pdfC.height/pdfC.width),mk=()=>{const c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,W,H);return[c,x]};
+  const[a,ax]=mk();ax.drawImage(pdfC,0,0,W,H);paint(ax,cur().map(s=>({...s,w:s.w*1.3})),W);
+  const[b,bx]=mk();paint(bx,cur().map(s=>({...s,w:s.w*1.3})),W,"#000");
+  return[a,b].map(c=>c.toDataURL("image/jpeg",.85).split(",")[1]);
+}
+async function run(mode){
+  if(!S.pages)return;
+  if(mode==="auto"&&(!S.dirty[S.cur]||!cur().length))return;
+  const P=prov(),key=store.get("cpc_key_"+P),model=store.get("cpc_model_"+P)||DEF[P];
+  if(!key||(P==="nvidia"&&!store.get("cpc_proxy"))){$("settings").click();return}
+  if(S.busy){S.pending=true;return}
+  if(!cur().length&&mode!=="hint"&&mode!=="show"){setStatus("Write something first");return}
+  S.busy=true;setStatus("Reading your working…",true);S.dirty[S.cur]=false;
+  const[img,inkOnly]=capture(),recent=S.log.slice(-4).map(x=>"- "+x.verdict+": "+x.feedback).join("\n")||"(none yet)";
+  const level=$("level").value==="hint"?"Give hints and point to where the problem is, but do not write out the corrected working unless I ask. Leave fix empty for mistakes.":"Explain fully and include the corrected step in fix.";
+  try{
+    const note="Feedback already given:\n"+recent+"\n\nFeedback level: "+level+"\n\nPage "+(S.cur+1)+". "+MODE[mode];
+    let r,j,txt;
+    if(P==="anthropic"){
+      r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({model:model,max_tokens:900,system:SYSTEM,messages:[{role:"user",content:[
+          {type:"text",text:"Image 1: paper page with my handwriting."},{type:"image",source:{type:"base64",media_type:"image/jpeg",data:img}},
+          {type:"text",text:"Image 2: my handwriting only."},{type:"image",source:{type:"base64",media_type:"image/jpeg",data:inkOnly}},
+          {type:"text",text:note}]}]})});
+      j=await r.json();if(!r.ok)throw new Error(j.error&&j.error.message||("HTTP "+r.status));
+      txt=j.content.map(c=>c.text||"").join("");
+    }else{
+      /* OpenAI-style chat API; one image only, since many free vision models accept just one */
+      const url=P==="nvidia"?store.get("cpc_proxy"):"https://openrouter.ai/api/v1/chat/completions";
+      r=await fetch(url,{method:"POST",headers:{"content-type":"application/json","Authorization":"Bearer "+key},
+        body:JSON.stringify({model:model,max_tokens:3000,temperature:.2,messages:[{role:"system",content:SYSTEM+" The single image is the paper page with the student's handwriting drawn over it."},
+          {role:"user",content:[{type:"text",text:note},{type:"image_url",image_url:{url:"data:image/jpeg;base64,"+img}}]}]})});
+      j=await r.json();if(!r.ok)throw new Error((j.error&&(j.error.message||j.error))||j.detail||j.message||("HTTP "+r.status));
+      txt=j.choices[0].message.content;
+    }
+    txt=txt.replace(/<think>[\s\S]*?<\/think>/g,"").replace(/```json|```/g,"").trim();
+    const o=JSON.parse(txt.slice(txt.indexOf("{"),txt.lastIndexOf("}")+1));
+    if(o.verdict==="nothing"&&mode==="auto"){setStatus("Looks fine so far")}
+    else{addCard(o);setStatus("Idle")}
+  }catch(err){setStatus("Error");addError(err.message)}
+  S.busy=false;
+  if(S.pending){S.pending=false;if(S.dirty[S.cur])run("auto")}
+}
+function addCard(o){
+  S.log.push(o);const l=LABEL[o.verdict]||["i",o.title||"Note"];
+  const d=document.createElement("div");d.className="fb v-"+(o.verdict||"good");
+  const t=document.createElement("div");t.className="t";
+  const b=document.createElement("span");b.className="badge";b.textContent=l[0];
+  const h=document.createElement("span");h.textContent=o.title||l[1];t.append(b,h);
+  if(o.marks){const m=document.createElement("small");m.textContent=" "+o.marks;t.append(m)}
+  const p=document.createElement("p");p.textContent=o.feedback||"";d.append(t,p);
+  if(o.fix){const f=document.createElement("div");f.className="fix";f.textContent=o.fix;d.append(f)}
+  const lg=$("log");lg.append(d);
+  const m=[{left:"$$",right:"$$",display:true},{left:"$",right:"$",display:false},{left:"\\(",right:"\\)",display:false},{left:"\\[",right:"\\]",display:true}];
+  if(window.renderMathInElement)try{renderMathInElement(d,{delimiters:m,throwOnError:false})}catch(e){}
+  lg.scrollTop=lg.scrollHeight;
+}
+function addError(msg){
+  const d=document.createElement("div");d.className="fb v-mistake";d.textContent="Coach unavailable: "+msg+". Check your provider, key and model in Settings.";
+  $("log").append(d);$("log").scrollTop=1e9;
+}
+$("check").onclick=()=>{S.dirty[S.cur]=true;run("auto")};
+$("hint").onclick=()=>run("hint");$("show").onclick=()=>run("show");
+setStatus("Idle");
+})();
+</script>
+</body>
+</html>
